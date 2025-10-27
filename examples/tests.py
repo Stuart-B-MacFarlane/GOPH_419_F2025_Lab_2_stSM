@@ -1,5 +1,7 @@
 import numpy as np
 
+from lab02.linalg import(
+    forward_substitution)
 def main():
     print ("Test, I am in main().")
 
@@ -19,6 +21,12 @@ def test_forward_substitution():
     #solve using numpy.linalg.solve()
     x_exp = np.linalg.solve(A,b)
     print ("expected x (from np.linalg.solve):\n",x_exp,
+           "\nA:\n",A,
+           "\nb:\n",b)
+    
+    #solve using lab02.linalg.forward_substitution
+    x_act = forward_substitution(A,b)
+    print ("ectual x (from:\n",x_act,
            "\nA:\n",A,
            "\nb:\n",b)
 
