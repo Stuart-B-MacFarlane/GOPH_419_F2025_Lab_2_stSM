@@ -1,39 +1,165 @@
 import numpy as np
 
-def forward_substitution(L,b):
-    """ Solve a system Lx=b,
-    where L is a lower triangular coeffiecent matrix,
-    and b is the right hand side vector,
-    or a matrix where each column is a right hand side vector
+def gauss_iter_solve(A,b,x0=None,tol=1e-8,alg="seidel"):
+    """ Solve a system Ax=bn using Gauss-Seidel method
 
     Parameters
     -------------
-    L: array_like
-        lower triangular matix, size = (n,n)
+    A: array_like
+        Coefficent matrix, size = (n,n)
     b: array like
         Right had side(s), size = (n, ) or (n,m)
         where m is the number of right hand sides
+    x0: array like
+        (optional) Initial guess
+        Default is none
+    tol: float
+        (optional) stopping condition
+        default is a value of 1e-8
+    alg: string
+        (optional) flag for algorithim used
+        defult is 'seidel', 'seidel' or 'jacobi' can be used
 
     Returns
     ------------
-    numpy.ndarray
+    x: array like 
+        numpy.ndarray
         The vector or matix of solutions x.
         This will have the same shape as b.
     """
     # checking that inputs can be convered to array of floats
     # making a local copy of the arrays 
-    L = np.array(L, dtype = float)
+    A = np.array(A, dtype = float)
     b = np.array(b, dtype = float)
-    # check shape of matrix L
-    L_shape = L.shape
-    if not len(L_shape) == 2:
-        raise ValueError("coefficent matrix L has shape {L_shape},", {len(L_shape)},
+    # check shape of matrix A
+    A_shape = A.shape
+    if not len(A_shape) == 2:
+        raise ValueError("coefficent matrix A has shape {A_shape},", {len(A_shape)},
             "Must be 2.")
-    n = L_shape[0]
-    if n != L_shape[1]:
-         raise ValueError("coefficent matrix L has shape {L_shape,", {len(L_shape)},
+    n = A_shape[0]
+    if n != A_shape[1]:
+         raise ValueError("coefficent matrix A has shape {A_shape},", {len(A_shape)},
           "Must be square.")
     # check shape of right hand side b
-    
+    b_shape = b.shape
+    if len(b_shape) <1 or len(b_shape) >2:
+        raise ValueError ("has dimenstion {len(b_shape)}. Must be 1 or 2")
+    if n != b_shape[0]:
+        raise ValueError ("b has leading dimension {len(b_shape[0])}, must match leading dimention of A ({n})")
 
-    return np.zeros_like(b)
+    if x0 is None:
+        x = np.zeros_like(b)
+    else:
+        x = np.array(x0)
+        x_shape = x.shape
+        if x_shape != b_shape:
+            raise ValueError ("x0 ({x0}) does not have the same shape as b ({b})")
+        elif x_shape[0] != b_shape[0] or x_shape[0] != n:
+            raise ValueError ("x0 does not have the same number of rows as A or b")
+
+    alg_input = alg.strip().lower()
+    if alg_input not in ("seidel","jacobi"):
+        raise ValueError ("algorithm must be 'seidel' or 'jacobi'")
+
+    A_diag_inv = np.diag(1 / np.diag(A))
+    A_star = A_diag_inv @ A
+
+    id = np.identity(len(A))
+    A_s_star = A_star - id
+
+    b_star = A_diag_inv @ b
+    
+    # Do the Gauss Seidel and Jacobi algorithms
+    # First initialize the counters and set maximum iterations
+    n = 0
+    n_max = 100
+    eps_a = 2 * tol
+
+    # The jacobi algorithm
+    if alg_input == 'jacobi':
+        while n < n_max and eps_a > tol:
+            x_copy = x.copy()       # Create a copy of the initial guess 
+            x = b_star - (A_s_star @ x)         # Do the algorithm
+            dx = x - x_copy             # Calculate the difference between iterations
+            n += 1      
+            eps_a = np.linalg.norm(dx) / np.linalg.norm(x)      # Update the approx relative error
+
+    # The Gauss-seidel algorithm
+    else:
+
+        k=0
+        eps_a = 1
+        while n_max > k and eps_a > tol:
+            x_new = np.copy(x)
+            print("step",k, "\n Eps_a",eps_a)
+            for i in range(A_shape[0]):
+                sum1 = np.dot(A[i, :i], x_new[:i])
+                sum2 = np.dot(A[i,i+1:], x[i+1:])
+                x_new[i] = (b[i] - sum1 - sum2 )/ A[i,i]
+
+            eps_a = np.linalg.norm(x_new - x)
+            print (eps_a)
+            x = x_new
+            k+=1
+
+
+    return x
+    
+"""A_test = np.array([[-11,4],[7,-9]])
+b_test = np.array ([-5,3])
+x0_test = np.array ([1,1])
+
+test = gauss_iter_solve(A_test,b_test)
+print (test)"""
+
+def spline_function(xd,yd,order=3)
+    """
+    parameters
+    -----------------
+    xd: array like
+        array of float data of increasing values
+    yd: array like
+        array of float data with the same shape as xd
+    order: int
+        (optional) order of polynomial, default is 3
+
+    returns 
+    -----------------
+    Function that takes x parameter and interpolates y values"""
+
+    xd= np.array(xd,dtype = float).flatten()
+    yd = np.array (yd,dtype = float).flatten()
+    y_out =[]
+
+    if len(xd) != len(yd):
+        raise ValueError ("xd and yd are diffent lenghts, must be the same")
+    if len (xd) != len(np.unique(xd)):
+        raise ValueError ("input variable 'xd' has repeated values")
+    if order not in (1,2,3):
+        raise ("input order is not in accepted range(1,2,3)")
+
+    n = len(xd) -1
+    
+    if order == 1:
+        
+        def linear_spline(x_out):
+            x_out = np.atleast_1d(x_out)
+            y_out = []
+            for x in x_out:
+                for i in range (n):
+                    if xd[i] <= x <= xd[i+1]:
+                        slope = (yd[i+1] - yd[i]) / (xd[i+1] - xd[i])
+                        y = yd[i] + slope * (x - xd[i])
+                        y_out.append(y)
+                        break
+                else:
+                    y_out.append(np.nan)  # outside range
+            return np.array(y_out) if len(y_out) > 1 else y_out[0]
+
+        return linear_spline
+
+
+    if order == 2:
+        
+
+        
