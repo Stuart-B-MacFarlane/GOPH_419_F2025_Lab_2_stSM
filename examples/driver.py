@@ -54,7 +54,7 @@ def main():
 
             
     plt.tight_layout()
-
+    plt.savefig("air_and_water_density_plot.png") 
     plt.show()
                         
 
@@ -62,5 +62,5 @@ def main():
 
 
 
-
-main()
+if __name__ == "__main__":
+    main()
