@@ -112,7 +112,7 @@ x0_test = np.array ([1,1])
 test = gauss_iter_solve(A_test,b_test)
 print (test)"""
 
-def spline_function(xd,yd,order=3)
+def spline_function(xd,yd,order=3):
     """
     parameters
     -----------------
@@ -138,28 +138,61 @@ def spline_function(xd,yd,order=3)
     if order not in (1,2,3):
         raise ("input order is not in accepted range(1,2,3)")
 
-    n = len(xd) -1
-    
-    if order == 1:
-        
-        def linear_spline(x_out):
-            x_out = np.atleast_1d(x_out)
-            y_out = []
-            for x in x_out:
-                for i in range (n):
-                    if xd[i] <= x <= xd[i+1]:
-                        slope = (yd[i+1] - yd[i]) / (xd[i+1] - xd[i])
-                        y = yd[i] + slope * (x - xd[i])
-                        y_out.append(y)
-                        break
+    x_min = xd[0]
+    x_max = xd[-1]
+    def f(x):
+
+        x_arr = np.atleast_1d(x)
+        if np.any((x_arr<x_min)|(x_arr>x_max)):
+            raise ValueError(f"Input is out of range.({x_min}-{x_max})")
+        n = len(xd)                    
+        for xi in x_arr:
+            idx = np.searchsorted(xd,xi)-1
+            if idx<0:
+                idx = 0
+            if idx >= n -1:
+                idx = n -2
+
+            #Linear need 2 points
+            if order == 1:
+                x0 = xd[idx]
+                x1 = xd[idx+1]
+                y0 = yd[idx]
+                y1 = yd[idx+1]
+                yi = y0 +(y1-y0) * (xi-x0) / (x1-x0)
+
+            #Quadratic need 3 points
+            if order ==2:
+                if idx == 0:
+                    pts = [0,1,2]
+                elif idx >= n -2:
+                     pts = [n-3,n-2,n-1]
                 else:
-                    y_out.append(np.nan)  # outside range
-            return np.array(y_out) if len(y_out) > 1 else y_out[0]
+                    pts = [idx-1,idx,idx+1]
+                xpts = xd[pts]
+                ypts = yd[pts]
 
-        return linear_spline
+                yi = 0
+                for i in range(3):
+                    li = np.prod([(xi-xpts[j])/(xpts[i]-xpts[j]) for j in range(3) if j!=i])
+                    yi += ypts[i]*li
+                
+            # cubic need 4 points 
+            if order == 3:
+                if idx <1:
+                    pts = [0,1,2,3]
+                elif idx > n-3:
+                    pts = [n-4,n-3,n-2,n-1]
+                else:
+                    pts = [idx -1,idx,idx+1,idx+2]
+                xpts = xd[pts]
+                ypts = yd[pts]
+                yi = 0
+                for i in range(4):
+                    li = np.prod([(xi-xpts[j])/(xpts[i]-xpts[j]) for j in range(4) if j!=i])
+                    yi += ypts[i]*li
+            y_out.append(yi)
 
+        return y_out[0] if np.isscalar(x) else np.array(y_out)
 
-    if order == 2:
-        
-
-        
+    return f 
