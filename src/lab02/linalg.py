@@ -91,14 +91,14 @@ def gauss_iter_solve(A,b,x0=None,tol=1e-8,alg="seidel"):
         eps_a = 1
         while n_max > k and eps_a > tol:
             x_new = np.copy(x)
-            print("step",k, "\n Eps_a",eps_a)
+            #print("step",k, "\n Eps_a",eps_a)
             for i in range(A_shape[0]):
                 sum1 = np.dot(A[i, :i], x_new[:i])
                 sum2 = np.dot(A[i,i+1:], x[i+1:])
                 x_new[i] = (b[i] - sum1 - sum2 )/ A[i,i]
 
             eps_a = np.linalg.norm(x_new - x)
-            print (eps_a)
+            #print (eps_a)
             x = x_new
             k+=1
 
