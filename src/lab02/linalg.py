@@ -130,7 +130,7 @@ def spline_function(xd,yd,order=3):
     xd= np.array(xd,dtype = float).flatten()
     yd = np.array (yd,dtype = float).flatten()
     y_out =[]
-
+    
     if len(xd) != len(yd):
         raise ValueError ("xd and yd are diffent lenghts, must be the same")
     if len (xd) != len(np.unique(xd)):
